@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QObject, Signal, Slot
@@ -99,17 +100,22 @@ class UIdocumentsmanager(QObject):
         self.load_documents_list()
 
 
+    def _resolve_media_path(self, doc_id: str, extension: str) -> Path:
+        if not doc_id or not extension:
+            raise ValueError("Invalid document ID or extension")
+        media_dir = self._parent.loaded_db.media_dir.resolve()
+        target_path = (media_dir / f"{doc_id}.{extension}").resolve()
+        if target_path.parent != media_dir:
+            raise ValueError("Access denied: Invalid document path")
+        return target_path
+
+
     @Slot(str, str)
     def open_doc(self, doc_id, extension):
         """ Open the selected document with the proper system application (if any)
         """
         try:
-            safe_doc_id = os.path.basename(str(doc_id))
-            safe_ext = os.path.basename(str(extension))
-            target_path = (self._parent.loaded_db.media_dir / f'{safe_doc_id}.{safe_ext}').resolve()
-            media_dir = self._parent.loaded_db.media_dir.resolve()
-            if not (str(target_path) == str(media_dir) or str(target_path).startswith(str(media_dir) + os.sep)):
-                raise ValueError("Access denied: Invalid document path")
+            target_path = self._resolve_media_path(str(doc_id), str(extension))
             open_file(target_path)
         except Exception as e:
             self.close_ui.emit()
@@ -124,11 +130,9 @@ class UIdocumentsmanager(QObject):
     def delete_doc(self, doc_id, doc_extension, doc_type, doc_preview):
         """ Delete the selected document
         """
-        safe_doc_id = os.path.basename(str(doc_id))
-        safe_ext = os.path.basename(str(doc_extension))
-        doc_file_path = (self._parent.loaded_db.media_dir / f'{safe_doc_id}.{safe_ext}').resolve()
-        media_dir = self._parent.loaded_db.media_dir.resolve()
-        if not (str(doc_file_path) == str(media_dir) or str(doc_file_path).startswith(str(media_dir) + os.sep)):
+        try:
+            doc_file_path = self._resolve_media_path(str(doc_id), str(doc_extension))
+        except ValueError:
             return
         
         self._parent.loaded_sig.delete_document(doc_id)

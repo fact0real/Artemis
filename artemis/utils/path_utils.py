@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse
 from urllib.request import url2pathname
 
 from artemis.utils.constants import Constants
@@ -11,7 +11,7 @@ def normalize_dialog_path(path):
     str_path = str(path)
     if str_path.startswith('file:'):
         parsed = urlparse(str_path)
-        return unquote(url2pathname(parsed.path))
+        return url2pathname(parsed.path)
     return str_path
 
 

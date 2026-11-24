@@ -83,14 +83,16 @@ class UIdbmanager(QObject):
         """ Delete the DB folder.
             Clear the main UI if the database to be deleted is the selected one 
         """
-        safe_name = os.path.basename(str(db_dir_name))
-        target_dir = (DATA_DIR / safe_name).resolve()
-        data_dir_str = str(DATA_DIR.resolve())
-        if not (str(target_dir) == data_dir_str or str(target_dir).startswith(data_dir_str + os.sep)):
+        if not db_dir_name or db_dir_name in (".", ".."):
+            return
+
+        base_dir = DATA_DIR.resolve()
+        target_dir = (base_dir / db_dir_name).resolve()
+        if target_dir.parent != base_dir:
             return
 
         if self._parent.loaded_db is not None:
-            if self._parent.loaded_db.db_dir_name == safe_name:
+            if self._parent.loaded_db.db_dir_name == target_dir.name:
                 self._parent.lock_menu.emit(True, False)
                 self._parent.clear_list.emit()
                 self._parent.clear_signal_page.emit()
